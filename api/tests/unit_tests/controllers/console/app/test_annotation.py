@@ -173,9 +173,9 @@ def test_get_app_ref_raises_not_found_when_app_is_not_in_current_tenant(sqlite_s
             "current_account_with_tenant",
             return_value=(_annotation_api_account(), "tenant-2"),
         ),
+        pytest.raises(NotFound),
     ):
-        with pytest.raises(NotFound):
-            annotation_module._get_app_ref(sqlite_session, "app-1")
+        annotation_module._get_app_ref(sqlite_session, "app-1")
 
 
 class TestConsoleAnnotationRefBoundaries:
@@ -698,17 +698,19 @@ class TestAnnotationImportServiceValidation:
         with patch("services.annotation_service.current_account_with_tenant") as mock_auth:
             mock_auth.return_value = (_annotation_security_account(), "tenant_id")
 
-            with patch("services.annotation_service.FeatureService"):
-                with patch("services.annotation_service.batch_import_annotations_task"):
-                    with patch("services.annotation_service.redis_client"):
-                        result = AppAnnotationService.batch_import_app_annotations("app_id", file, sqlite_session)
+            with (
+                patch("services.annotation_service.FeatureService"),
+                patch("services.annotation_service.batch_import_annotations_task"),
+                patch("services.annotation_service.redis_client"),
+            ):
+                result = AppAnnotationService.batch_import_app_annotations("app_id", file, sqlite_session)
 
-                        # Should return success response
-                        assert "job_id" in result
-                        assert "job_status" in result
-                        assert result["job_status"] == "waiting"
-                        assert "record_count" in result
-                        assert result["record_count"] == 2
+                # Should return success response
+                assert "job_id" in result
+                assert "job_status" in result
+                assert result["job_status"] == "waiting"
+                assert "record_count" in result
+                assert result["record_count"] == 2
 
 
 class TestAnnotationImportTaskOptimization:
